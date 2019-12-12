@@ -61,9 +61,9 @@ spa.shell = (function ($) {
     bool_return = true;
 
     KEYVAL:
-    for (key_name in arg_map){
+    for (key_name in arg_map) {
       if (arg_map.hasOwnProperty(key_name)) {
-        if (key_name.indexOf('_' === 0)) {
+        if (key_name.indexOf('_') === 0) {
           continue KEYVAL;
         }
         anchor_map_revise[key_name] = arg_map[key_name];
@@ -98,8 +98,30 @@ spa.shell = (function ($) {
       anchor_map_proposed = $.uriAnchor.makeAnchorMap();
     } catch (error) {
       $.uriAnchor.setAnchor(anchor_map_previous, null, true);
+      return false;
     }
-  }
+    stateMap.anchor_map = anchor_map_proposed;
+
+    _s_chat_previous = anchor_map_previous._s_chat;
+    _s_chat_proposed = anchor_map_proposed._s_chat;
+
+    if (!anchor_map_previous || _s_chat_previous !== _s_chat_proposed) {
+      s_chat_proposed = anchor_map_proposed.chat;
+      switch (s_chat_proposed) {
+        case 'open':
+          toggleChat(true);
+          break;
+        case 'closed':
+          toggleChat(false);
+          break;
+        default:
+          toggleChat(false);
+          delete anchor_map_proposed.chat;
+          $.uriAnchor.setAnchor(anchor_map_proposed, null, true);
+      }
+    }
+    return false;
+  };
 
   setJqueryMap = function () {
     var $container = stateMap.$container;
@@ -161,11 +183,9 @@ spa.shell = (function ($) {
   };
 
   onClickChat = function (event) {
-    if (toggleChat(stateMap.is_chat_retracted)) {
-      $.uriAnchor.setAnchor({
-        chat: (stateMap.is_chat_retracted ? 'open' : 'closed')
-      });
-    };
+    changeAnchorPart({
+      chat: (stateMap.is_chat_retracted ? 'open' : 'closed')
+    });
     return false;
   };
 
@@ -178,6 +198,16 @@ spa.shell = (function ($) {
     jqueryMap.$chat
       .attr('title', configMap.chat_retractd_title)
       .click(onClickChat);
+
+    //配置uriAnchor插件，用于检测模式
+    $.uriAnchor.configModule({
+      schema_map: configMap.anchor_schema_map
+    });
+
+    //绑定hashchange事件并立即触发，这样模块在初始加载时就会处理书签
+    $(window)
+      .bind('hashchange', onHashchange)
+      .trigger('hashchange');
   };
 
   return { initModule: initModule };
