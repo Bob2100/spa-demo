@@ -69,6 +69,7 @@
     height: 15px;
     background: red;
     z-index: 1;
+    cursor: pointer;
 }
 .spa-shell-modal{
     margin-top: -200px;
